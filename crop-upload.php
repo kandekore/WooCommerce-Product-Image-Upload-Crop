@@ -1,11 +1,9 @@
 <?php
 /*
 * Plugin Name: WooCommerce Image Upload and Crop
-* Plugin URI: https://yourwebsite.com/
 * Description: This plugin allows users to upload and crop images when ordering a product.
 * Version: 1.0
-* Author: Your Name
-* Author URI: https://yourwebsite.com/
+* Author: D Kandekore
 * License: GPL2
 */
 
