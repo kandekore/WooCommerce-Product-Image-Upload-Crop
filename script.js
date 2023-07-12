@@ -26,9 +26,13 @@ j(document).ready(function() {
 
                 // initialize croppie on the new image
                 croppie = new Croppie(img, {
-                    enableExif: true,
+                       enableExif: true,
                     viewport: { width: 400, height: 400, type: cropType },
-                    boundary: { width: 500, height: 500 }
+                    boundary: { width: 500, height: 500 },
+					enableResize: false,
+    				enableOrientation: true,
+    				mouseWheelZoom: 'ctrl'   
+                    
                     
                 });
             }
