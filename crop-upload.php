@@ -1,6 +1,7 @@
 <?php
 /*
 * Plugin Name: WooCommerce Image Upload and Crop
+
 * Description: This plugin allows users to upload and crop images when ordering a product.
 * Version: 1.0
 * Author: D Kandekore
@@ -11,14 +12,14 @@ require_once(ABSPATH . 'wp-admin/includes/media.php');
 require_once(ABSPATH . 'wp-admin/includes/file.php');
 require_once(ABSPATH . 'wp-admin/includes/image.php');
 
-
 function add_custom_option() {
     global $product;
     $allow_upload = get_post_meta($product->get_id(), '_allow_upload', true);
+    $crop_type = get_post_meta($product->get_id(), '_crop_type', true);
     if ($allow_upload == 'yes') {
-        echo '<div class="image-upload">
+        echo '<div class="image-upload" data-crop-type="' . esc_attr($crop_type) . '">
                 <input type="file" id="custom_image" name="custom_image" accept="image/*" />
-                <img id="preview_image" style="display:none" />
+                <div id="crop-container" style="display:none"></div>
                 <button type="button" id="crop_image" style="display:none">Crop Image</button>
               </div>';
     }
@@ -26,27 +27,18 @@ function add_custom_option() {
 add_action('woocommerce_before_add_to_cart_button', 'add_custom_option', 10);
 
 function handle_image_upload($passed, $product_id, $quantity, $variation_id = null) {
-    // check if file was uploaded and no errors occurred
-    if (!empty($_FILES['custom_image']['name']) && $_FILES['custom_image']['error'] == 0) {
-        $attachment_id = media_handle_upload('custom_image', 0);
-        if (is_wp_error($attachment_id)) {
-            wc_add_notice(__('Image upload error.', 'your-plugin-name'), 'error');
-            return false;
-        }
-        // save image attachment ID in session
-        WC()->session->set('custom_image', $attachment_id);
-    }
+    // Skip file handling. Image is being uploaded via AJAX.
     return $passed;
 }
 add_filter('woocommerce_add_to_cart_validation', 'handle_image_upload', 10, 4);
 
 function enqueue_scripts() {
-    wp_enqueue_style('cropper-css', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css');
-    wp_enqueue_script('cropper', 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js', array('jquery'), '1.5.12', true);
-    wp_enqueue_script('script', plugins_url('script.js', __FILE__), array('jquery', 'cropper'), '1.0', true);
+    wp_enqueue_style('croppie-css', 'https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.css');
+    wp_enqueue_script('croppie', 'https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js', array('jquery'), '2.6.5', true);
+    wp_enqueue_script('script', plugins_url('script.js', __FILE__), array('jquery', 'croppie'), '1.0', true);
 }
-add_action('wp_enqueue_scripts', 'enqueue_scripts');
 
+add_action('wp_enqueue_scripts', 'enqueue_scripts');
 
 function save_image_to_order($item, $cart_item_key, $values, $order) {
     if ($image_id = WC()->session->get('custom_image')) {
@@ -55,11 +47,10 @@ function save_image_to_order($item, $cart_item_key, $values, $order) {
 }
 add_action('woocommerce_checkout_create_order_line_item', 'save_image_to_order', 10, 4);
 
-
 function add_upload_checkbox_meta_box() {
     add_meta_box(
         'upload_checkbox_meta_box', // id
-        'Allow Image Upload', // title
+        'Image Upload Options', // title
         'upload_checkbox_meta_box_callback', // callback
         'product', // post_type
         'side' // context
@@ -71,7 +62,12 @@ function upload_checkbox_meta_box_callback($post) {
     // Use nonce for verification
     wp_nonce_field(plugin_basename(__FILE__), 'upload_nonce');
     $allow_upload = get_post_meta($post->ID, '_allow_upload', true);
-    echo '<input type="checkbox" id="allow_upload" name="allow_upload" value="yes"' . checked('yes', $allow_upload, false) . '> Allow Image Upload';
+    $crop_type = get_post_meta($post->ID, '_crop_type', true);
+    echo '<p><input type="checkbox" id="allow_upload" name="allow_upload" value="yes"' . checked('yes', $allow_upload, false) . '> Allow Image Upload</p>';
+    echo '<p><label for="crop_type">Crop Type: </label><select id="crop_type" name="crop_type">
+            <option value="circle" ' . selected($crop_type, 'circle', false) . '>Circle</option>
+            <option value="square" ' . selected($crop_type, 'square', false) . '>Square</option>
+          </select></p>';
 }
 
 function save_upload_checkbox_meta_box($post_id) {
@@ -95,5 +91,58 @@ function save_upload_checkbox_meta_box($post_id) {
     } else {
         delete_post_meta($post_id, '_allow_upload');
     }
+
+    // Save crop type
+    if (isset($_POST['crop_type'])) {
+        update_post_meta($post_id, '_crop_type', $_POST['crop_type']);
+    }
 }
 add_action('save_post', 'save_upload_checkbox_meta_box');
+
+add_action('wp_ajax_upload_image', 'handle_ajax_image_upload');
+add_action('wp_ajax_nopriv_upload_image', 'handle_ajax_image_upload');
+
+function handle_ajax_image_upload() {
+    // Check nonce and other security issues before processing.
+
+    if (isset($_POST['image'])) {
+        $data = $_POST['image'];
+        $uri = substr($data, strpos($data, ",") + 1);
+
+        $file = uniqid() . '.jpg';
+        $upload_dir = wp_upload_dir();
+$path = $upload_dir['basedir'] . '/' . $file;
+
+file_put_contents($path, base64_decode($uri));
+
+        // Set image in session to be added to cart item
+        WC()->session->set('custom_image', $path);
+
+        // Send some kind of response.
+        wp_send_json_success($path);
+    } else {
+        wp_send_json_error('No image data received.');
+    }
+
+    wp_die(); // this is required to terminate immediately and return a proper response
+}
+function add_image_to_email($item_id, $item, $order, $plain_text) {
+    $image_id = $item->get_meta('_custom_image');
+
+    if ($image_id) {
+        // Get the image URL
+        $image_url = wp_get_attachment_url($image_id);
+        if ($image_url) {
+            // If it's not plain text email
+            if (!$plain_text) {
+                echo '<p><strong>Custom Image:</strong></p>';
+                echo '<img src="' . esc_url($image_url) . '" alt="Custom Image" />';
+            } else {
+                // If it is a plain text email
+                echo "\nCustom Image: " . $image_url;
+            }
+        }
+    }
+}
+add_action('woocommerce_order_item_meta_end', 'add_image_to_email', 10, 4);
+

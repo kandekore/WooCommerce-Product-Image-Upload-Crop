@@ -2,9 +2,11 @@ var j = jQuery.noConflict();
 
 j(document).ready(function() {
     var input = j('#custom_image')[0];
-    var image = j('#preview_image')[0];
+    var container = j('#crop-container')[0];
     var cropButton = j('#crop_image')[0];
-    var cropper;
+      var imageUpload = j('.image-upload')[0];
+    var cropType = j(imageUpload).data('crop-type');
+    var croppie;
 
     input.addEventListener('change', function (e) {
         var file = e.target.files[0];
@@ -13,13 +15,21 @@ j(document).ready(function() {
             var reader = new FileReader();
 
             reader.onload = function (e) {
-                image.src = e.target.result;
-                image.style.display = 'block';
+                // create an image and add it to the container
+                var img = document.createElement("img");
+                img.id = "image-to-crop";
+                img.src = e.target.result;
+                container.innerHTML = ""; // remove previous image if it exists
+                container.appendChild(img);
+                container.style.display = 'block';
                 cropButton.style.display = 'block';
 
-                // Use the first DOM element from jQuery's array-like object
-                cropper = new Cropper(image, {
-                    aspectRatio: 1
+                // initialize croppie on the new image
+                croppie = new Croppie(img, {
+                    enableExif: true,
+                    viewport: { width: 400, height: 400, type: cropType },
+                    boundary: { width: 500, height: 500 }
+                    
                 });
             }
 
@@ -28,8 +38,24 @@ j(document).ready(function() {
     });
 
     cropButton.addEventListener('click', function () {
-        image.src = cropper.getCroppedCanvas().toDataURL('image/jpeg');
-        cropButton.style.display = 'none';
-        cropper.destroy();
+        croppie.result('canvas').then(function(croppedImg) {
+            var img = document.querySelector('#image-to-crop');
+            img.src = croppedImg;
+            cropButton.style.display = 'none';
+
+            j.ajax({
+                type: 'POST',
+                url: '/wp-admin/admin-ajax.php',
+                data: { 
+                    'action': 'upload_image',
+                    'image': croppedImg
+                },
+                success: function(response) {
+                    // you might want to do something with the response
+                }
+            });
+        });
+
+        croppie.destroy();
     });
 });

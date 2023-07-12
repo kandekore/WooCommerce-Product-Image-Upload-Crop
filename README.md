@@ -1,67 +1,91 @@
 # WooCommerce Image Upload and Crop Plugin
 
-The **WooCommerce Image Upload and Crop** plugin allows users to upload and crop images when ordering a product.
+The **WooCommerce Image Upload and Crop** plugin allows users to upload and crop images when ordering a product on a WooCommerce-powered website.
 
 ## Table of Contents
-
 - [Installation](#installation)
-- [Description](#description)
 - [Usage](#usage)
-- [Hooks and Filters](#hooks-and-filters)
+  - [Frontend Integration](#frontend-integration)
+  - [Image Upload and Order Processing](#image-upload-and-order-processing)
+  - [Email Notifications](#email-notifications)
+- [Configuration](#configuration)
+  - [Product Meta Box](#product-meta-box)
+  - [Croppie Library](#croppie-library)
+- [Development](#development)
 - [License](#license)
 - [Author](#author)
+- [Support](#support)
 
 ## Installation
 
-1. Download the plugin files and extract them.
-2. Upload the extracted folder to the `/wp-content/plugins/` directory, or install the plugin directly from the WordPress plugin repository.
-3. Activate the plugin through the 'Plugins' menu in WordPress.
-
-## Description
-
-The plugin provides the following functionality:
-
-- Adds an image upload option to the product page for products that allow image uploads.
-- Handles the image upload and saves the uploaded image as an attachment.
-- Enqueues necessary CSS and JavaScript files for image cropping functionality.
-- Saves the uploaded image ID to the order when the user completes the checkout process.
-- Adds a meta box to the product edit page for enabling or disabling image uploads for a specific product.
+1. Download the plugin ZIP file.
+2. Log in to your WordPress admin dashboard.
+3. Navigate to **Plugins > Add New**.
+4. Click on the **Upload Plugin** button at the top of the page.
+5. Choose the plugin ZIP file you downloaded and click **Install Now**.
+6. After the plugin is installed, click **Activate**.
 
 ## Usage
 
-1. Enable image uploads for a specific product:
-   - Edit the product in the WordPress admin area.
-   - In the "Allow Image Upload" meta box, check the "Allow Image Upload" checkbox.
-   - Update or publish the product.
+After activating the plugin, you can enable image upload and cropping for specific products by following these steps:
 
-2. Display the image upload option on the product page:
-   - The image upload option will be automatically displayed on the product page if the "Allow Image Upload" option is enabled for the product.
+1. Edit a product and scroll down to the **Image Upload Options** meta box.
+2. Check the **Allow Image Upload** checkbox to enable image upload for the product.
+3. Select the desired crop type from the **Crop Type** dropdown (options: Circle or Square).
+4. Update or publish the product.
 
-3. Uploading and cropping an image:
-   - Click the "Choose File" button to select an image file from your computer.
-   - Once the image is selected, it will be displayed below the upload button.
-   - Use the cropping functionality to crop the image as needed.
-   - Click the "Crop Image" button to finalize the cropping process.
-   - The cropped image will replace the original image preview.
+## Frontend Integration
 
-4. Completing the order:
-   - When the user completes the checkout process, the cropped image will be associated with the order.
+The plugin integrates with the WooCommerce product page on the frontend. When the **Allow Image Upload** option is enabled for a product, users will see an image upload section below the **Add to Cart** button.
 
-## Hooks and Filters
+Users can click on the **Choose File** button to select an image file from their device. After selecting the file, the image will be displayed in a container. Users can then use the croppie.js library to crop the image based on the selected crop type (Circle or Square). Once the image is cropped, users can click the **Crop Image** button to save the cropped image.
 
-The plugin uses the following hooks and filters for customization:
+## Image Upload and Order Processing
 
-- `woocommerce_before_add_to_cart_button`: Allows adding custom content before the "Add to Cart" button on the product page.
-- `woocommerce_add_to_cart_validation`: Handles the image upload and validation before adding the product to the cart.
-- `wp_enqueue_scripts`: Enqueues CSS and JavaScript files for image cropping functionality.
-- `woocommerce_checkout_create_order_line_item`: Saves the uploaded image ID to the order as meta data.
-- `add_meta_boxes`: Adds the "Allow Image Upload" meta box to the product edit page.
-- `save_post`: Handles saving the "Allow Image Upload" meta data when the product is saved or updated.
+When a user uploads and crops an image, the plugin saves the image file to the WordPress uploads directory. The image file path is stored in the user's session.
+
+When the user adds the product to the cart and proceeds to checkout, the image file path is attached to the corresponding order item as meta data. This allows the image to be associated with the order.
+
+## Email Notifications
+
+If an image is attached to an order item, the image URL is included in the order email notifications. The image is displayed as part of the order details, allowing both customers and administrators to see the uploaded image.
+
+## Configuration
+
+The plugin provides configuration options through the WordPress admin dashboard.
+
+### Product Meta Box
+
+The **Image Upload Options** meta box appears on the product edit screen. It allows you to configure the following options for each product:
+
+- **Allow Image Upload**: Check this option to enable image upload and cropping for the product.
+- **Crop Type**: Select the desired crop type for the uploaded images (options: Circle or Square).
+
+### Croppie Library
+
+The plugin uses the [Croppie library](https://foliotek.github.io/Croppie/) for image cropping. The library is loaded from the following CDN:
+
+- CSS: [https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.css](https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.css)
+- JavaScript: [https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js](https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js)
+
+## Development
+
+If you want to modify or extend the plugin's functionality, you can follow these steps:
+
+1. Clone the plugin repository or create a new plugin directory.
+2. Copy the plugin files into your development environment.
+3. Modify the PHP code as needed.
+4. Modify the JavaScript code in the `script.js` file.
+5. Use your preferred method to build and package the plugin for distribution.
 
 ## License
 
-This plugin is licensed under the GPL2 License.
+This plugin is released under the GPL-2.0 License. You are free to use, modify, and distribute this plugin in accordance with the license terms.
 
 ## Author
 
-The WooCommerce Image Upload and Crop plugin is developed by D Kandekore.
+This plugin was developed by D Kandekore.
+
+## Support
+
+For support or assistance with this plugin, please contact the author or refer to the plugin's official documentation.
