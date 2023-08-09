@@ -135,9 +135,11 @@ function handle_ajax_image_upload() {
 function save_custom_image_in_cart_item($cart_item_data, $product_id) {
     if (WC()->session->__isset('custom_image')) {
         $cart_item_data['custom_image'] = WC()->session->get('custom_image');
+        WC()->session->__unset('custom_image');  // Unset the custom image from the session
     }
     return $cart_item_data;
 }
+
 add_filter('woocommerce_add_cart_item_data', 'save_custom_image_in_cart_item', 10, 2);
 
 function add_custom_image_order_item_meta($item_id, $values, $cart_item_key) {
