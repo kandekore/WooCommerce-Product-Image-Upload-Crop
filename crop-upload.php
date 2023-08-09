@@ -111,38 +111,70 @@ function handle_ajax_image_upload() {
 
         $file = uniqid() . '.jpg';
         $upload_dir = wp_upload_dir();
-$path = $upload_dir['basedir'] . '/' . $file;
 
-file_put_contents($path, base64_decode($uri));
+        // Get the full server path of the uploaded image
+        $path = $upload_dir['basedir'] . '/' . $file;
+
+        // Convert this path to its corresponding URL
+        $url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $path);
+
+        // Save the decoded image to the server
+        file_put_contents($path, base64_decode($uri));
 
         // Set image in session to be added to cart item
-        WC()->session->set('custom_image', $path);
+        WC()->session->set('custom_image', $url);
 
         // Send some kind of response.
-        wp_send_json_success($path);
+        wp_send_json_success($url);
     } else {
         wp_send_json_error('No image data received.');
     }
 
     wp_die(); // this is required to terminate immediately and return a proper response
 }
-function add_image_to_email($item_id, $item, $order, $plain_text) {
-    $image_id = $item->get_meta('_custom_image');
+function save_custom_image_in_cart_item($cart_item_data, $product_id) {
+    if (WC()->session->__isset('custom_image')) {
+        $cart_item_data['custom_image'] = WC()->session->get('custom_image');
+    }
+    return $cart_item_data;
+}
+add_filter('woocommerce_add_cart_item_data', 'save_custom_image_in_cart_item', 10, 2);
 
-    if ($image_id) {
-        // Get the image URL
-        $image_url = wp_get_attachment_url($image_id);
-        if ($image_url) {
-            // If it's not plain text email
-            if (!$plain_text) {
-                echo '<p><strong>Custom Image:</strong></p>';
-                echo '<img src="' . esc_url($image_url) . '" alt="Custom Image" />';
-            } else {
-                // If it is a plain text email
-                echo "\nCustom Image: " . $image_url;
-            }
+function add_custom_image_order_item_meta($item_id, $values, $cart_item_key) {
+    if (isset($values['custom_image'])) {
+        wc_add_order_item_meta($item_id, '_custom_image_url', $values['custom_image']);
+    }
+}
+add_action('woocommerce_add_order_item_meta', 'add_custom_image_order_item_meta', 10, 3);
+
+function add_image_to_email($item_id, $item, $order, $plain_text) {
+    // Get the image URL from the item meta
+    $image_url = $item->get_meta('_custom_image_url');
+
+    if ($image_url) {
+        // If it's not plain text email
+        if (!$plain_text) {
+            echo '<p><strong>Custom Image:</strong></p>';
+            echo '<img src="' . esc_url($image_url) . '" alt="Custom Image" />';
+            // Display link to the image below
+            echo '<p><a href="' . esc_url($image_url) . '">View Custom Image</a></p>';
+        } else {
+            // If it is a plain text email
+            echo "\nCustom Image: " . $image_url;
+            echo "\nView Custom Image: " . $image_url;
         }
     }
 }
-add_action('woocommerce_order_item_meta_end', 'add_image_to_email', 10, 4);
 
+add_action('woocommerce_order_item_meta_end', 'add_image_to_email', 10, 4);
+function display_custom_image_in_cart($product_name, $cart_item, $cart_item_key) {
+    // Check if custom image URL exists for the item
+    if (isset($cart_item['custom_image'])) {
+        $image_url = $cart_item['custom_image'];
+        $product_name .= '<br><strong>Custom Image:</strong>';
+        $product_name .= '<img src="' . esc_url($image_url) . '" alt="Custom Image" style="width: 100px;">'; // adjust the width as required
+        $product_name .= '<br><a href="' . esc_url($image_url) . '">View Custom Image</a>';
+    }
+    return $product_name;
+}
+add_filter('woocommerce_cart_item_name', 'display_custom_image_in_cart', 10, 3);
