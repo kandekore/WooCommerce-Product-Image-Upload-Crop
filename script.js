@@ -55,8 +55,7 @@ j(document).ready(function() {
                     'image': croppedImg
                 },
                 success: function(response) {
-                    // you might want to do something with the response
-                }
+console.log("Image uploaded successfully:", response);                }
             });
         });
 
