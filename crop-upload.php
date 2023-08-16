@@ -1,12 +1,15 @@
 <?php
 /*
 * Plugin Name: WooCommerce Image Upload and Crop
-
 * Description: This plugin allows users to upload and crop images when ordering a product.
 * Version: 1.0
 * Author: D Kandekore
 * License: GPL2
 */
+
+if(@session_start()){
+    session_start();
+}
 
 require_once(ABSPATH . 'wp-admin/includes/media.php');
 require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -27,7 +30,6 @@ function add_custom_option() {
 add_action('woocommerce_before_add_to_cart_button', 'add_custom_option', 10);
 
 function handle_image_upload($passed, $product_id, $quantity, $variation_id = null) {
-    // Skip file handling. Image is being uploaded via AJAX.
     return $passed;
 }
 add_filter('woocommerce_add_to_cart_validation', 'handle_image_upload', 10, 4);
@@ -41,9 +43,13 @@ function enqueue_scripts() {
 add_action('wp_enqueue_scripts', 'enqueue_scripts');
 
 function save_image_to_order($item, $cart_item_key, $values, $order) {
-    if ($image_id = WC()->session->get('custom_image')) {
+
+    
+    if ($image_id = $_SESSION['custom_image']) {
         $item->add_meta_data('_custom_image', $image_id);
-    }
+    } 
+    
+
 }
 add_action('woocommerce_checkout_create_order_line_item', 'save_image_to_order', 10, 4);
 
@@ -121,8 +127,7 @@ function handle_ajax_image_upload() {
         // Save the decoded image to the server
         file_put_contents($path, base64_decode($uri));
 
-        // Set image in session to be added to cart item
-        WC()->session->set('custom_image', $url);
+        $_SESSION['custom_image']=$url;
 
         // Send some kind of response.
         wp_send_json_success($url);
@@ -133,10 +138,12 @@ function handle_ajax_image_upload() {
     wp_die();
 }
 function save_custom_image_in_cart_item($cart_item_data, $product_id) {
-    if (WC()->session->__isset('custom_image')) {
-        $cart_item_data['custom_image'] = WC()->session->get('custom_image');
-        WC()->session->__unset('custom_image');  // Unset the custom image from the session
+
+    if(isset($_SESSION['custom_image']) && $_SESSION['custom_image']!=''){    
+        $cart_item_data['custom_image'] = $_SESSION['custom_image'];
+        unset($_SESSION['custom_image']);
     }
+
     return $cart_item_data;
 }
 
@@ -149,24 +156,6 @@ function add_custom_image_order_item_meta($item_id, $values, $cart_item_key) {
 }
 add_action('woocommerce_add_order_item_meta', 'add_custom_image_order_item_meta', 10, 3);
 
-/*function add_image_to_email($item_id, $item, $order, $plain_text) {
-    // Get the image URL from the item meta
-    $image_url = $item->get_meta('_custom_image_url');
-
-    if ($image_url) {
-        // If it's not plain text email
-        if (!$plain_text) {
-            echo '<p><strong>Custom Image:</strong></p>';
-            echo '<img src="' . esc_url($image_url) . '" alt="Custom Image" />';
-            // Display link to the image below
-            echo '<p><a href="' . esc_url($image_url) . '">View Custom Image</a></p>';
-        } else {
-            // If it is a plain text email
-            echo "\nCustom Image: " . $image_url;
-            echo "\nView Custom Image: " . $image_url;
-        }
-    }
-}*/
 function add_image_to_email($item_id, $item, $order, $plain_text) {
     // Get the image URL from the item meta
     $image_url = $item->get_meta('_custom_image_url');
@@ -199,17 +188,7 @@ function add_image_to_email($item_id, $item, $order, $plain_text) {
 }
 
 add_action('woocommerce_order_item_meta_end', 'add_image_to_email', 10, 4);
-/*
-function display_custom_image_in_cart($product_name, $cart_item, $cart_item_key) {
-    // Check if custom image URL exists for the item
-    if (isset($cart_item['custom_image'])) {
-        $image_url = $cart_item['custom_image'];
-        $product_name .= '<br><strong>Custom Image:</strong>';
-        $product_name .= '<img src="' . esc_url($image_url) . '" alt="Custom Image" style="width: 100px;">'; 
-        $product_name .= '<br><a href="' . esc_url($image_url) . '">View Image</a>';
-    }
-    return $product_name;
-}*/
+
 function display_custom_image_in_cart($product_name, $cart_item, $cart_item_key) {
     $product_id = $cart_item['product_id'];
     $allows_upload = get_post_meta($product_id, '_allow_upload', true);
@@ -226,4 +205,5 @@ function display_custom_image_in_cart($product_name, $cart_item, $cart_item_key)
     return $product_name;
 }
 
-add_filter('woocommerce_cart_item_name', 'display_custom_image_in_cart', 10, 3);
+add_filter('woocommerce_cart_item_name', 'display_custom_image_in_cart', 10, 3);  
+
