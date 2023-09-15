@@ -1,6 +1,7 @@
 <?php
 /*
 * Plugin Name: WooCommerce Image Upload and Crop
+
 * Description: This plugin allows users to upload and crop images when ordering a product.
 * Version: 1.0
 * Author: D Kandekore
@@ -30,6 +31,7 @@ function add_custom_option() {
 add_action('woocommerce_before_add_to_cart_button', 'add_custom_option', 10);
 
 function handle_image_upload($passed, $product_id, $quantity, $variation_id = null) {
+    // Skip file handling. Image is being uploaded via AJAX.
     return $passed;
 }
 add_filter('woocommerce_add_to_cart_validation', 'handle_image_upload', 10, 4);
@@ -44,12 +46,11 @@ add_action('wp_enqueue_scripts', 'enqueue_scripts');
 
 function save_image_to_order($item, $cart_item_key, $values, $order) {
 
-    
     if ($image_id = $_SESSION['custom_image']) {
         $item->add_meta_data('_custom_image', $image_id);
     } 
     
-
+ 
 }
 add_action('woocommerce_checkout_create_order_line_item', 'save_image_to_order', 10, 4);
 
@@ -127,9 +128,10 @@ function handle_ajax_image_upload() {
         // Save the decoded image to the server
         file_put_contents($path, base64_decode($uri));
 
+
         $_SESSION['custom_image']=$url;
 
-        // Send some kind of response.
+  
         wp_send_json_success($url);
     } else {
         wp_send_json_error('No image data received.');
@@ -139,11 +141,12 @@ function handle_ajax_image_upload() {
 }
 function save_custom_image_in_cart_item($cart_item_data, $product_id) {
 
+
     if(isset($_SESSION['custom_image']) && $_SESSION['custom_image']!=''){    
         $cart_item_data['custom_image'] = $_SESSION['custom_image'];
         unset($_SESSION['custom_image']);
     }
-
+  
     return $cart_item_data;
 }
 
@@ -206,4 +209,26 @@ function display_custom_image_in_cart($product_name, $cart_item, $cart_item_key)
 }
 
 add_filter('woocommerce_cart_item_name', 'display_custom_image_in_cart', 10, 3);  
+function log_cart_item_meta_data( $cart_item_key, $product_id, $quantity, $variation_id, $variation, $cart_item_data ) {
+   
+    error_log('---------- Cart Item Meta Data Start ----------');
+
+    // Log product ID and cart item key for reference.
+    error_log('Product ID: ' . $product_id);
+    error_log('Cart Item Key: ' . $cart_item_key);
+
+    // Log the main cart item data array.
+    error_log('Cart Item Data: ' . print_r($cart_item_data, true));
+
+    if ($variation_id && !empty($variation)) {
+        // If there's a variation ID, it's a variable product. Log the variation data.
+        error_log('Variation ID: ' . $variation_id);
+        error_log('Variation Data: ' . print_r($variation, true));
+    }
+
+   
+    error_log('---------- Cart Item Meta Data End ----------');
+}
+
+add_action('woocommerce_add_to_cart', 'log_cart_item_meta_data', 10, 6);
 
