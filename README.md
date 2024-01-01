@@ -53,7 +53,7 @@ If an image is attached to an order item, the image URL is included in the order
 
 ## Screenshot
 
-[Project Screenshot](https://darrenk.uk/wp-content/uploads/2024/01/imageup.jpg)
+![Project Screenshot](https://darrenk.uk/wp-content/uploads/2024/01/imageup.jpg)
 
 ## Configuration
 
