@@ -8,6 +8,7 @@ The **WooCommerce Image Upload and Crop** plugin allows users to upload and crop
   - [Frontend Integration](#frontend-integration)
   - [Image Upload and Order Processing](#image-upload-and-order-processing)
   - [Email Notifications](#email-notifications)
+- [Screenshot](#screenshot)
 - [Configuration](#configuration)
   - [Product Meta Box](#product-meta-box)
   - [Croppie Library](#croppie-library)
@@ -49,6 +50,10 @@ When the user adds the product to the cart and proceeds to checkout, the image f
 ## Email Notifications
 
 If an image is attached to an order item, the image URL is included in the order email notifications. The image is displayed as part of the order details, allowing both customers and administrators to see the uploaded image.
+
+## Screenshot
+
+[Project Screenshot](https://darrenk.uk/wp-content/uploads/2024/01/imageup.jpg)
 
 ## Configuration
 
